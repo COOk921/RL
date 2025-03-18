@@ -83,14 +83,9 @@ class GridWorldEnv(gym.Env):
             self._target_location = self.np_random.integers(
                 0, self.size, size=2, dtype=int
             )
-        
-        # 固定的位置
-        self._target_location = np.array([4, 4])
-        self._agent_location = np.array([0, 0])
+    
 
         observation = self._get_obs()
-
-    
         info = self._get_info()
 
         if self.render_mode == "human":
@@ -108,9 +103,10 @@ class GridWorldEnv(gym.Env):
             dist_to_target = np.linalg.norm(self._agent_location - self._target_location)
 
             reward =  -1 - dist_to_target
-        #else:
-            
-            #reward = -100
+        else:
+            reward = -10
+        
+        
     
         # An episode is done iff the agent has reached the target
         terminated = np.array_equal(self._agent_location, self._target_location)
