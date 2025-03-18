@@ -16,10 +16,11 @@ class ContainerStackingEnv(gym.Env):
         self.bay_width = 6
         self.bay_height = 6
         self.encoder = TrmEncoder(input_size=128, d_k=128, d_v=128, n_heads=4, is_layer_norm=True, attn_dropout=0.1)
-    
+
+        #离散动作空间
         self.observation_space = Box(
-            low=0, high=1, shape=(2,self.bay_width*self.bay_height), dtype=np.float32
-            )
+            low=0, high=10, shape=(self.bay_width,), dtype=np.float32
+        )
         
         
         # self.observation_space = Box(
@@ -38,8 +39,10 @@ class ContainerStackingEnv(gym.Env):
         unload_port = torch.tensor(unload_port, dtype=torch.int32).view(1, -1)
         
         observation = torch.cat((weights, unload_port), dim=0)
-       
-        return observation #[2, bay_width*bay_height]
+        
+        # 转化为浮点数组
+    
+        return self.heights.astype(np.float64)#[2, bay_width*bay_height]
 
         # [batch, bay_width*bay_height, d_k]
         # features = self.encoder(weights, unload_port) 
@@ -73,7 +76,7 @@ class ContainerStackingEnv(gym.Env):
         # TODO: 可视化
         # if self.render_mode == "human":
         #     self._render_frame()
-
+       
         return observation, info
         
 
@@ -81,43 +84,27 @@ class ContainerStackingEnv(gym.Env):
     
         observation = self._get_obs()
         info = self._get_info()
+        terminated = False
+        truncated = False
 
-        if self.heights[action] >= self.bay_height:
-            return observation, -100, True, False, {"message": "超出堆放高度"}
-        
-        current_weight = self.containers[self.current_container_index]
         
         # 计算奖励
         reward = 0
-        
         # if action == np.argmin(self.heights):
         #     reward += 10
         # elif action == np.argmax(self.heights):
-        #     reward -= 10
+        #     reward -= 5
 
-       
-        # 1. 重量差奖励
-        top_weight = self.weights[self.heights[action]][action]  
-        if top_weight == 0:         # 如果当前列为空，给予5点奖励
-            reward += 50  
-        else:                      # 如果当前列不为空，根据重量差给予奖励
-            weight_diff = abs(current_weight - top_weight)
-            reward += max(0, 50 - weight_diff)  # 权重差小得分高
-        
-        # 2. 左右平衡奖励
-        left_weight = sum(self.weights[:,:self.bay_width // 2]) # 左侧重量
-        right_weight = sum(self.weights[:,self.bay_width // 2:]) # 右侧重量
-        balance_penalty = abs(sum(left_weight) - sum(right_weight))   # 左右平衡惩罚
-        reward -= balance_penalty * 0.1  # 平衡性惩罚
-        
-
-        # 3. 动作完成奖励
-        if self.current_container_index == len(self.containers) - 1:
+        if self.current_container_index == len(self.containers) -3 :
             reward += 300
+            return observation, reward, True, True, info
 
-        
-        terminated = False
-        truncated = False
+        if self.heights[action] >= self.bay_height:
+            self.current_container_index += 1
+            return observation, -100, False, True, {"message": "超出堆放高度"}
+
+        current_weight = self.containers[self.current_container_index]
+
     
         # 更新状态
         self.weights[self.heights[action] ][action] = current_weight
@@ -126,7 +113,6 @@ class ContainerStackingEnv(gym.Env):
 
         # 更新当前集装箱索引
         self.current_container_index += 1
-        
         return observation, reward, terminated, truncated,info
 
     def render(self, mode="human"):

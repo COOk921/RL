@@ -10,6 +10,8 @@ from gymnasium_env.envs.grid_world import GridWorldEnv
 
 from module.TrmEncoder import TransformerFeaturesExtractor
 
+
+
 def train():
     env = gymnasium.make('gymnasium_env/ContainerStackingEnv-v0')
     policy_kwargs = dict(
@@ -23,12 +25,13 @@ def train():
         verbose=1,
         n_steps = 512,
         tensorboard_log="./tensorboard/",
-        policy_kwargs=policy_kwargs
+        device="cuda"   
+        # policy_kwargs=policy_kwargs
     )
 
     
 
-    model.learn(total_timesteps=20000, progress_bar=False) 
+    model.learn(total_timesteps=80000, progress_bar=False) 
     model_path = "./checkpoints/ContainerStackingEnv-v0_ppo_model"
     model.save(model_path)
     
@@ -55,7 +58,7 @@ def test():
     env.close()
 
 def main():
-    train()
+    #train()
     test()
 
 
