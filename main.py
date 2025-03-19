@@ -11,6 +11,8 @@ from gymnasium_env.envs.grid_world import GridWorldEnv
 from module.TrmEncoder import TransformerFeaturesExtractor
 
 
+model_path = "./checkpoints/ContainerStackingEnv-v0_ppo_model"
+base_model_path = "./checkpoints/base/ContainerStackingEnv-v0_ppo_model"
 
 def train():
     env = gymnasium.make('gymnasium_env/ContainerStackingEnv-v0')
@@ -18,28 +20,29 @@ def train():
         features_extractor_class=TransformerFeaturesExtractor,
         features_extractor_kwargs=dict(features_dim=128)
     )
-
+    
     model = PPO(
         "MlpPolicy", 
         env, 
         verbose=1,
         n_steps = 512,
-        tensorboard_log="./tensorboard/",
+        tensorboard_log="./tensorboard/learn_setting", #tensorboard --logdir=./tensorboard
         device="cuda"   
         # policy_kwargs=policy_kwargs
     )
 
-    
 
-    model.learn(total_timesteps=80000, progress_bar=False) 
-    model_path = "./checkpoints/ContainerStackingEnv-v0_ppo_model"
+    model = PPO.load(base_model_path, env=env)
+
+    model.learn(total_timesteps=50000, progress_bar=False) 
+    
     model.save(model_path)
     
 
 
 def test():
     env = gymnasium.make('gymnasium_env/ContainerStackingEnv-v0')
-    model_path = "./checkpoints/ContainerStackingEnv-v0_ppo_model"
+    
     loaded_model = PPO.load(model_path, env=env)
 
     num_episodes = 1
@@ -58,7 +61,7 @@ def test():
     env.close()
 
 def main():
-    #train()
+    train()
     test()
 
 
