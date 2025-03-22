@@ -22,7 +22,7 @@ def train():
     )
     
     model = PPO(
-        "MlpPolicy", 
+        "MultiInputPolicy", 
         env, 
         verbose=1,
         n_steps = 512,
@@ -32,9 +32,9 @@ def train():
     )
 
 
-    model = PPO.load(base_model_path, env=env)
+    #model = PPO.load(base_model_path, env=env)
 
-    model.learn(total_timesteps=50000, progress_bar=False) 
+    model.learn(total_timesteps=30000, progress_bar=False) 
     
     model.save(model_path)
     
