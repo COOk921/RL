@@ -1,7 +1,7 @@
 import pdb
 
 import gymnasium
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO,DQN,A2C,TD3
 from stable_baselines3.common.env_checker import check_env
 
 import gymnasium_env
@@ -24,17 +24,18 @@ def train():
     model = PPO(
         "MultiInputPolicy", 
         env, 
-        verbose=1,
-        n_steps = 512,
+        verbose=0,
+        n_steps = 256,
+        learning_rate=0.0001,
         tensorboard_log="./tensorboard/learn_setting", #tensorboard --logdir=./tensorboard
         device="cuda"   
         # policy_kwargs=policy_kwargs
     )
 
 
-    #model = PPO.load(base_model_path, env=env)
+    #model = PPO.load(model_path, env=env)
 
-    model.learn(total_timesteps=30000, progress_bar=False) 
+    model.learn(total_timesteps=80000, progress_bar=False) 
     
     model.save(model_path)
     
