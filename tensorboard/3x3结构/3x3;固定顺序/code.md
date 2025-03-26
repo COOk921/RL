@@ -1,3 +1,6 @@
+![image-20250325230854694](C:\Users\ytn30\AppData\Roaming\Typora\typora-user-images\image-20250325230854694.png)
+
+```py
 import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.spaces import Box
@@ -16,10 +19,15 @@ class ContainerStackingEnv(gym.Env):
         self.bay_height = 3
         # self.encoder = TrmEncoder(input_size=128, d_k=128, d_v=128, n_heads=4, is_layer_norm=True, attn_dropout=0.1)
         self.now_reward = 0
-     
+        
+        # with open("weight.txt", "r") as file:
+        #     data = file.read()
+        #     self.containers = np.array([int(x) for x in data.split()], dtype=np.float32)
+        #     self.containers = self.containers[::-1]
+       
         
         self.observation_space = spaces.Dict({
-            "next_container_weight":  Box(low=0, high=100, shape=(1,), dtype=np.int32),
+            "next_container_weight":  Box(low=0, high=100, shape=(1,), dtype=np.float32),
             "bay_state": Box(low=0, high=100, shape=(self.bay_width,self.bay_height), dtype=np.int32),
             #"heights": Box(low=0, high=self.bay_height, shape=(self.bay_width,), dtype=np.int32),
             # "top_weights": Box(low=0, high=3, shape=(self.bay_width,), dtype=np.int32)
@@ -84,17 +92,17 @@ class ContainerStackingEnv(gym.Env):
         current_weight = self.containers[self.current_container_index]
         # [0,35] -> [0,5]
         action = (action // self.bay_width, action % self.bay_width)  # 转化为坐标 (row, col)
-
-      
-        
+       
         reward = self.calculate_reward(action, current_weight)
-        
+
+
         self.weights[action[0]][action[1]] = current_weight
         self.unload_port[action[0]][action[1]] = self.event_port[action[0]][action[1]]
-        
+
         self.current_container_index += 1
-
-
+        
+      
+        
         if self.current_container_index == self.bay_width*self.bay_height:
             terminated = True
        
@@ -109,16 +117,16 @@ class ContainerStackingEnv(gym.Env):
         row, col = action
         
         # 基础放置奖励
-        reward += current_weight * (self.bay_height - row) * 0.1
+        reward += current_weight * (1 + row) * 0.1
         
         # 稳定性奖励
         if row > 0:
             if self.weights[row-1][col] < current_weight:
-                reward -= 50  # 重的压轻的惩罚
+                reward -= 5  # 重的压轻的惩罚
         
         # 高度平衡奖励
-        # height_diff = max(self.heights) - min(self.heights)
-        # reward -= height_diff * 0.5
+        height_diff = max(self.heights) - min(self.heights)
+        reward -= height_diff * 0.5
         
         # 终止状态奖励
         # if self.current_container_index == self.bay_width*self.bay_height:
@@ -127,22 +135,11 @@ class ContainerStackingEnv(gym.Env):
         return reward
 
     def generate_containers(self):
-
-        #随机集装箱
         mean_weight = 50
         std_weight = 10
-        self.containers = np.random.normal(mean_weight, std_weight, size=self.bay_width*self.bay_height + 1)
-        #self.containers = np.clip( int(self.containers), 30, 70)
-
-        #固定集装箱
-        #self.containers = sorted([i for i in range(40,50)]) 
-
-       # 从文件读取集装箱
-        with open("weight.txt", "r") as file:
-            data = file.read()
-            self.containers = np.array([int(x) for x in data.split()], dtype=np.int32)
-            
-       
+        self.containers = sorted([i for i in range(30,40)]) 
+        # self.containers = np.random.normal(mean_weight, std_weight, size=self.bay_width*self.bay_height + 1)
+        # self.containers = np.clip(self.containers, 30, 70)
 
     def render(self, mode="human"):
        
@@ -160,3 +157,6 @@ class ContainerStackingEnv(gym.Env):
         print(f"当前奖励: {self.now_reward}")
 
         print("=" * (self.bay_width * 4 - 1))
+
+```
+

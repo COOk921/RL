@@ -1,3 +1,26 @@
+![image-20250326164253647](C:\Users\ytn30\AppData\Roaming\Typora\typora-user-images\image-20250326164253647.png)
+
+
+
+- **指定的序列**
+
+- 新的奖励函数
+
+- 3X3
+
+- 做出了最优决策
+
+- 复杂的特征网络（最后给出了代码）
+
+- 同时发现，随机序列时，仍然可以做出优秀决策，曲线如下
+
+  ![image-20250326165429564](C:\Users\ytn30\AppData\Roaming\Typora\typora-user-images\image-20250326165429564.png)
+  
+  
+  
+  
+
+```python
 import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.spaces import Box
@@ -129,9 +152,9 @@ class ContainerStackingEnv(gym.Env):
     def generate_containers(self):
 
         #随机集装箱
-        mean_weight = 50
-        std_weight = 10
-        self.containers = np.random.normal(mean_weight, std_weight, size=self.bay_width*self.bay_height + 1)
+        # mean_weight = 50
+        # std_weight = 10
+        # self.containers = np.random.normal(mean_weight, std_weight, size=self.bay_width*self.bay_height + 1)
         #self.containers = np.clip( int(self.containers), 30, 70)
 
         #固定集装箱
@@ -160,3 +183,22 @@ class ContainerStackingEnv(gym.Env):
         print(f"当前奖励: {self.now_reward}")
 
         print("=" * (self.bay_width * 4 - 1))
+
+```
+
+
+
+
+
+```
+    # policy_kwargs = dict(
+    #     net_arch=[
+    #         dict(
+    #             pi=[256, 256, 256],  # 策略网络更深
+    #             vf=[256, 256, 256]   # 价值网络更深
+    #         )
+    #     ],
+    #     activation_fn=torch.nn.ReLU
+    # )
+```
+

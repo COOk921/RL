@@ -31,3 +31,21 @@ def dict_2_tensor(state_dict, args):
     state[state_dict['target'][0], state_dict['target'][1]] = -1
     
     return state.unsqueeze(0)
+
+def count_ascending_order(weights):
+    count = 0
+    for col in range(weights.shape[1]):
+        for row in range(weights.shape[0] - 1):
+            if weights[row, col] == 0:
+                continue
+            if weights[row, col] <= weights[row + 1, col]:
+                count += 1
+    return count
+
+
+def count_ascending_containers(containers):
+    count = 0
+    for i in range(1, len(containers)):
+        if containers[i] > containers[i - 1]:
+            count += 1
+    return count

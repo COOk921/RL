@@ -109,12 +109,12 @@ class ContainerStackingEnv(gym.Env):
         row, col = action
         
         # 基础放置奖励
-        reward += current_weight * (self.bay_height - row) * 0.1
+        #reward += current_weight * (self.bay_height - row) * 0.1
         
         # 稳定性奖励
         if row > 0:
             if self.weights[row-1][col] < current_weight:
-                reward -= 50  # 重的压轻的惩罚
+                reward -= 5  # 重的压轻的惩罚
         
         # 高度平衡奖励
         # height_diff = max(self.heights) - min(self.heights)
@@ -134,13 +134,13 @@ class ContainerStackingEnv(gym.Env):
         self.containers = np.random.normal(mean_weight, std_weight, size=self.bay_width*self.bay_height + 1)
         #self.containers = np.clip( int(self.containers), 30, 70)
 
-        #固定集装箱
-        #self.containers = sorted([i for i in range(40,50)]) 
+        # 固定集装箱
+        #self.containers = sorted([i for i in range(30,60)]) 
 
-       # 从文件读取集装箱
-        with open("weight.txt", "r") as file:
-            data = file.read()
-            self.containers = np.array([int(x) for x in data.split()], dtype=np.int32)
+        # 从文件读取集装箱
+        # with open("weight.txt", "r") as file:
+        #     data = file.read()
+        #     self.containers = np.array([int(x) for x in data.split()], dtype=np.int32)
             
        
 
