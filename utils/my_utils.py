@@ -32,6 +32,7 @@ def dict_2_tensor(state_dict, args):
     
     return state.unsqueeze(0)
 
+# 计算Bay内的倒箱数量
 def count_ascending_order(weights):
     count = 0
     for col in range(weights.shape[1]):

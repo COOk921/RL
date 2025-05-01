@@ -12,6 +12,9 @@ from gymnasium_env.envs.grid_world import GridWorldEnv
 from gymnasium_env.envs.ContainerSeqEnv import ContainerSeqEnv
 
 from module.TrmEncoder import TransformerFeaturesExtractor
+from model.network import CustomActorCriticPolicy,CustomFeaturesExtractor
+
+from callback import TensorboardCallback
 
 
 model_path = "./checkpoints/ContainerStackingEnv-v0_ppo_model"
@@ -23,8 +26,8 @@ def train():
     env = gymnasium.make("gymnasium_env/GridWorldEnv")
 
     policy_kwargs = dict(
-        features_extractor_class=TransformerFeaturesExtractor,
-        features_extractor_kwargs=dict(features_dim=128)
+        features_extractor_class=CustomFeaturesExtractor,
+        features_extractor_kwargs=dict(cnn_output_dim=256)
     )
     
     model = PPO(
@@ -33,9 +36,9 @@ def train():
         verbose=1,
         n_steps = 1024,
         learning_rate=0.0001,
-        tensorboard_log="./tensorboard/learn_setting", #tensorboard --logdir=./tensorboard
-        device="cuda"   
-        # policy_kwargs=policy_kwargs
+        tensorboard_log="./tensorboard/learn_setting", # tensorboard --logdir=./tensorboard/learn_setting
+        device="cuda"  ,
+        policy_kwargs=policy_kwargs
     )
 
     
@@ -82,22 +85,21 @@ def train1(env):
     env = ActionMasker(env, mask_fn)
     #check_env(env)
 
-    # policy_kwargs = dict(
-    #     features_extractor_class=TransformerFeaturesExtractor,
-    #     features_extractor_kwargs=dict(features_dim=128)
-    # )
+
     policy_kwargs = dict(
+        features_extractor_class=CustomFeaturesExtractor,
+        features_extractor_kwargs=dict(cnn_output_dim=256),
         net_arch=[
             dict(
-                pi=[1024, 512, 512],  # 策略网络更深
-                vf=[1024, 512, 512]   # 价值网络更深
+                pi=[512, 256, 256],  # 策略网络更深
+                vf=[512, 256, 256]   # 价值网络更深
             )
         ],
         activation_fn=torch.nn.ReLU
     )
     
     model = MaskablePPO(
-        "MultiInputPolicy", 
+        "MultiInputPolicy",  #CustomActorCriticPolicy
         env, 
         verbose=2,
         n_steps = 512,
@@ -110,10 +112,10 @@ def train1(env):
         device="cuda" ,
         policy_kwargs=policy_kwargs
     )
-    
+
     #model = PPO.load(base_model_path, env=env)
 
-    model.learn(total_timesteps=80000, progress_bar=True) 
+    model.learn(total_timesteps=80000, progress_bar=False ,  callback=TensorboardCallback())   #
     
     model.save(model_path)
 
