@@ -39,7 +39,7 @@ def count_ascending_order(weights):
         for row in range(weights.shape[0] - 1):
             if weights[row, col] == 0:
                 continue
-            if weights[row, col] <= weights[row + 1, col]:
+            if weights[row, col] < weights[row + 1, col]:
                 count += 1
     return count
 

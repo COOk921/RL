@@ -20,8 +20,8 @@ class TensorboardCallback(BaseCallback):
         count = 0
        
         if done == 1:
-            bay_state = self.locals['infos'][0]['terminal_observation']['bay_state']
-            count = count_ascending_order(bay_state)
+            bay_weight = self.locals['infos'][0]['terminal_observation']['bay_weight']
+            count = count_ascending_order(bay_weight)
             self.logger.record("count", count)
         
         return True

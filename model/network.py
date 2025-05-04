@@ -102,24 +102,24 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         self,
         observation_space: gym.spaces.Dict,
         cnn_output_dim: int = 256,
-        attention_d_model: int = 64, # Embedding dimension for attention
+        attention_d_model: int = 256, # Embedding dimension for attention
         attention_nhead: int = 4,     # Number of attention heads
         attention_dropout: float = 0.0 # Dropout for attention
     ):
         
-        # --- CNN Feature Dimension (for bay_state) ---
+        # --- CNN Feature Dimension (for bay_weight) ---
         # This remains the same as before
         
         # --- Attention Feature Dimension (for containers) ---
         # After attention and aggregation (e.g., mean pooling), the output dim will be attention_d_model
         attention_output_dim = attention_d_model
 
-        top_weights_dim = observation_space["top_weights"].shape[0]
-        mlp_output_dim_weights = 256 
-        attention_topWeight_dim = attention_d_model
+        # top_weights_dim = observation_space["top_weights"].shape[0]
+        # mlp_output_dim_weights = 256 
+        # attention_topWeight_dim = attention_d_model
 
         # --- Calculate Total Feature Dimension ---
-        total_features_dim = attention_topWeight_dim + cnn_output_dim
+        total_features_dim = attention_d_model + cnn_output_dim + cnn_output_dim 
         
         super().__init__(observation_space, features_dim=total_features_dim)
 
@@ -128,8 +128,8 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
             raise ValueError(f"attention_d_model ({attention_d_model}) must be divisible by "
                              f"attention_nhead ({attention_nhead})")
 
-        # --- CNN for 'bay_state' (same as before) ---
-        n_input_channels = 1 # Assuming bay_state is single channel HxW
+        # --- CNN for 'bay_weight' (same as before) ---
+        n_input_channels = 1 # Assuming bay_weight is single channel HxW
         self.cnn = nn.Sequential(
             nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
@@ -139,12 +139,30 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         )
         # Calculate CNN flattened dimension dynamically
         with th.no_grad():
-            dummy_input_shape = (1, n_input_channels) + observation_space["bay_state"].shape
+            dummy_input_shape = (1, n_input_channels) + observation_space["bay_weight"].shape
             dummy_input = th.zeros(dummy_input_shape)
             cnn_flatten_dim = self.cnn(dummy_input).shape[-1]
             
         self.cnn_linear = nn.Sequential(
             nn.Linear(cnn_flatten_dim, cnn_output_dim),
+            nn.ReLU()
+        )
+
+        # --- CNN for 'bay_port' (same as before) ---
+        n_input_channels = 1
+        self.cnn_bay_port = nn.Sequential(
+            nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+        with th.no_grad():
+            dummy_input_shape = (1, n_input_channels) + observation_space["bay_port"].shape
+            dummy_input = th.zeros(dummy_input_shape)
+            cnn_flatten_dim_bay_port = self.cnn_bay_port(dummy_input).shape[-1]
+        self.cnn_linear_bay_port = nn.Sequential(  
+            nn.Linear(cnn_flatten_dim_bay_port, cnn_output_dim),
             nn.ReLU()
         )
 
@@ -204,12 +222,19 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         # self.dropout = nn.Dropout(attention_dropout) # If adding FF layer
 
     def forward(self, observations: TensorDict) -> th.Tensor:
-        # --- Process 'bay_state' with CNN ---
-        bay_state_obs = observations["bay_state"].float().unsqueeze(1) # (B, 1, H, W)
-        cnn_latent = self.cnn(bay_state_obs)
+        # --- Process 'bay_weight' with CNN ---
+        bay_weight_obs = observations["bay_weight"].float().unsqueeze(1) # (B, 1, H, W)
+        cnn_latent = self.cnn(bay_weight_obs)
         cnn_features = self.cnn_linear(cnn_latent) # (B, cnn_output_dim)
         top_weights_features = cnn_features
 
+        # --- Process 'bay_port' with CNN ---
+        bay_port_obs = observations["bay_port"].float().unsqueeze(1) # (B, 1, H, W)
+        cnn_latent = self.cnn_bay_port(bay_port_obs)
+        cnn_features = self.cnn_linear_bay_port(cnn_latent) # (B, cnn_output_dim)
+        bay_port_feathures = cnn_features  # (B, cnn_output_dim)
+
+        bay_feathyres = th.cat((top_weights_features, bay_port_feathures), dim=1) # (B, 2*cnn_output_dim)
         # --- Process 'top_weights' with MLP ---
         # top_weights_obs = observations["top_weights"].float()
         # top_weights_features = self.mlp_top_weights(top_weights_obs) # (B, mlp_output_dim_weights)
@@ -230,11 +255,11 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
 
         # --- Process 'cont_weights' and 'cont_port' with Attention ---
         cont_weights_obs = observations["cont_weights"].float() # (B, cont_num)
-        #cont_port_obs = observations["cont_port"].float()       # (B, cont_num)
+        cont_port_obs = observations["cont_port"].float()       # (B, cont_num)
         
         # 1. Combine features: (B, cont_num) + (B, cont_num) -> (B, cont_num, 2)
         #    We stack them along the last dimension.
-        combined_cont_features = th.stack((cont_weights_obs, cont_weights_obs), dim=-1)
+        combined_cont_features = th.stack((cont_weights_obs, cont_port_obs), dim=-1)
         
         
         # 2. Project features: (B, cont_num, 2) -> (B, cont_num, attention_d_model)
@@ -271,9 +296,8 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         #    You could also use max pooling: attn_output.max(dim=1).values
         aggregated_attention_features = attn_output.max(dim=1).values  
 
-       
         # --- Concatenate CNN features and Aggregated Attention features ---
-        combined_features = th.cat((top_weights_features, aggregated_attention_features), dim=1)
+        combined_features = th.cat((bay_feathyres,aggregated_attention_features), dim=1)
         # Expected shape: (B, cnn_output_dim + attention_d_model) 
         # which should match self.features_dim
         

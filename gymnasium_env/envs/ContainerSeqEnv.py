@@ -11,16 +11,17 @@ class ContainerSeqEnv(gym.Env):
     def __init__(self):
         super(ContainerSeqEnv, self).__init__()
         
-        self.bay_width = 6
-        self.bay_height = 6
+        self.bay_width = 5
+        self.bay_height = 5
         self.cont_num = self.bay_width*self.bay_height
         self.now_reward = 0
 
         self.observation_space = spaces.Dict({
             "cont_weights": Box(low=0, high=100, shape=(self.cont_num,), dtype=np.int32),
-            #"cont_port": Box(low=0, high=3, shape=(self.cont_num,), dtype=np.int32),
-            "top_weights": Box(low=0, high=100, shape=(self.bay_width,), dtype=np.int32),
-            "bay_state": Box(low=0, high=100, shape=(self.bay_height,self.bay_width), dtype=np.int32)
+            "cont_port": Box(low=0, high=3, shape=(self.cont_num,), dtype=np.int32),
+            #"top_weights": Box(low=0, high=100, shape=(self.bay_width,), dtype=np.int32),
+            "bay_weight": Box(low=0, high=100, shape=(self.bay_height,self.bay_width), dtype=np.int32),
+            "bay_port": Box(low=0, high=3, shape=(self.bay_height,self.bay_width), dtype=np.int32)
         })
         self.action_space = spaces.Discrete(self.cont_num)
         self.now_action = 0
@@ -32,9 +33,10 @@ class ContainerSeqEnv(gym.Env):
     def _get_obs(self):
         observation = {
           "cont_weights": self.cont_weights,
-          #"cont_port": self.cont_port,
-          "top_weights": self.top_weights,
-          "bay_state": self.bay_state
+          "cont_port": self.cont_port,
+          #"top_weights": self.top_weights,
+          "bay_weight":  self.bay_weight,
+          "bay_port": self.bay_port
         }
 
         return observation
@@ -52,7 +54,7 @@ class ContainerSeqEnv(gym.Env):
 
         self.total_weight = np.sum(self.cont_weights)
         self.now_cont_index = 0
-        self.bay_state = np.zeros((self.bay_height,self.bay_width), dtype=np.int32)
+        self.bay_weight = np.zeros((self.bay_height,self.bay_width), dtype=np.int32)
         self.bay_port = np.zeros((self.bay_height,self.bay_width), dtype=np.int32)
         self.top_weights = np.zeros((self.bay_width,), dtype=np.int32)
         self.mask = np.ones((self.cont_num,), dtype=np.int32)
@@ -78,7 +80,7 @@ class ContainerSeqEnv(gym.Env):
         # row:[0,self.bay_height-1]
         # col:[0,self.bay_width-1]
         row,col = ((self.now_cont_index -1)  // self.bay_width, (self.now_cont_index -1) % self.bay_width) 
-        self.bay_state[row][col] = current_weight
+        self.bay_weight[row][col] = current_weight
         self.bay_port[row][col] = current_port
 
         self.top_weights[col] = current_weight
@@ -86,11 +88,16 @@ class ContainerSeqEnv(gym.Env):
         self.mask[action] = 0
 
         
+        reward = self.calculate_reward(row, col, current_weight, current_port)
 
         if self.now_cont_index == self.cont_num :
             terminated = True
+            # weight_reward = count_ascending_order(self.bay_weight)
+            # port_reward = count_ascending_order(self.bay_port)
+            #reward = - weight_reward
+            
 
-        reward = self.calculate_reward(row, col, current_weight, current_port)
+    
         self.now_reward += reward
 
         observation = self._get_obs()
@@ -106,15 +113,20 @@ class ContainerSeqEnv(gym.Env):
         weight_reward, port_reward = 0, 0
         # 稳定性奖励
         if row > 0:
-            if self.bay_state[row-1][col] < current_weight:
+            if self.bay_weight[row-1][col] <= current_weight:
                 weight_reward -= 1
             else:
-                weight_reward += 1
-        
-        # if row > 0:
-        #     if current_port <= self.bay_port[row - 1 ][col]:
-        #         port_reward += 1
-        
+                weight_reward += 0
+        # else:
+        #     weight_reward += current_weight * 0.1
+
+        if row > 0:
+            if current_port >= self.bay_port[row - 1 ][col]:
+                port_reward += 0
+            else:
+                port_reward -= 1
+      
+          
         reward = weight_reward + port_reward
         return reward
 
@@ -129,7 +141,7 @@ class ContainerSeqEnv(gym.Env):
         #self.cont_weights = sorted([i for i in range(40,50)]) 
 
        # 从文件读取集装箱
-        with open("ContainerData/weight.txt", "r") as file:
+        with open("ContainerData/mixed/container_levels_50_mixed.txt", "r") as file:
             data = file.read()
             self.cont_weights = np.array([int(x) for x in data.split()], dtype=np.int32)
             self.cont_weights = self.cont_weights[:self.cont_num]
@@ -142,17 +154,27 @@ class ContainerSeqEnv(gym.Env):
 
     def render(self, mode="human"):
        
-        print(f"当前集装箱索引: {self.now_cont_index}, 当前重量: {self.cont_weights[self.now_action]}")
+        print(f"当前集装箱索引: {self.now_cont_index}, 当前重量: {self.cont_weights[self.now_action]}, 当前港口: {self.cont_port[self.now_action]}")
         print("Bay weight:")
-        for i in range(self.bay_width):
-            for j in range(self.bay_height):
-                print(f"{self.bay_state[self.bay_height - i - 1][j]:3.0f}", end=" ")
+
+        for i in range(self.bay_height):
+            for j in range(self.bay_width):
+                print(f"{self.bay_weight[self.bay_height - i -1 ][j ]:3.0f}", end=" ")
+            print()
+
+        print("Bay port:")
+        for i in range(self.bay_height):
+            for j in range(self.bay_width):
+                print(f"{self.bay_port[self.bay_height - i -1 ][j]:3.0f}", end=" ")
             print()
         
-        print(f"Bay内倒序: {count_ascending_order(self.bay_state)}")
+        print(f"Bay内倒序: {count_ascending_order(self.bay_weight)}")
         # print(f"元素序列倒序: {count_ascending_containers(self.containers)}")
 
         print(self.top_weights)
         print(f"当前奖励: {self.now_reward}")
 
         print("=" * (self.bay_width * 4 - 1))
+
+
+
