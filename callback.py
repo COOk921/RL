@@ -1,6 +1,6 @@
 from stable_baselines3.common.callbacks import BaseCallback
 import numpy as np
-from utils.my_utils import count_ascending_order
+from utils.my_utils import weight_count,port_count
 import pdb
 
 class TensorboardCallback(BaseCallback):
@@ -26,10 +26,10 @@ class TensorboardCallback(BaseCallback):
             bay_weight = self.training_env.get_attr('bay_weight')[0]
             bay_port = self.training_env.get_attr('bay_port')[0]
 
-            count1 = count_ascending_order(bay_weight)
-            count2 = count_ascending_order(bay_port)
+            count1 = weight_count(bay_weight)
+            count2 = port_count(bay_port)
 
-            self.logger.record("count/weight_count", count1)
-            self.logger.record("count/port_count", count2)
+            self.logger.record("count/weight_count", count1 -1 )
+            self.logger.record("count/port_count", count2 -1 )
         
         return True

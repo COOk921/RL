@@ -5,15 +5,15 @@ import numpy as np
 from module.TrmEncoder import TrmEncoder
 import torch
 import pdb
-from utils.my_utils import count_ascending_order, count_ascending_containers
+from utils.my_utils import weight_count,port_count
 
 class ContainerStackingEnv(gym.Env):
     def __init__(self):
         super(ContainerStackingEnv, self).__init__()
         
         # 船舶 Bay 的尺寸
-        self.bay_width = 3
-        self.bay_height = 3
+        self.bay_width = 7
+        self.bay_height = 7
         # self.encoder = TrmEncoder(input_size=128, d_k=128, d_v=128, n_heads=4, is_layer_norm=True, attn_dropout=0.1)
         self.now_reward = 0
      

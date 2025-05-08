@@ -5,14 +5,14 @@ import numpy as np
 from module.TrmEncoder import TrmEncoder
 import torch
 import pdb
-from utils.my_utils import count_ascending_order, count_ascending_containers
+from utils.my_utils import weight_count,port_count
 
 class ContainerSeqEnv(gym.Env):
     def __init__(self):
         super(ContainerSeqEnv, self).__init__()
         
-        self.bay_width = 10
-        self.bay_height = 10
+        self.bay_width = 7
+        self.bay_height = 7
         self.cont_num = self.bay_width*self.bay_height
         self.now_reward = 0
 
@@ -98,11 +98,8 @@ class ContainerSeqEnv(gym.Env):
 
         if self.now_cont_index == self.cont_num :
             terminated = True
-            weight_reward = count_ascending_order(self.bay_weight)
-            port_reward = count_ascending_order(self.bay_port)
-            reward = - (weight_reward + port_reward) 
-            
 
+        
     
         self.now_reward += reward
 
@@ -131,8 +128,8 @@ class ContainerSeqEnv(gym.Env):
                 port_reward -= 1
       
           
-        reward = weight_reward + port_reward
-        return 0
+        reward = weight_reward  + port_reward 
+        return reward
 
     def generate_containers(self):
         
@@ -172,7 +169,7 @@ class ContainerSeqEnv(gym.Env):
                 print(f"{self.bay_port[self.bay_height - i -1 ][j]:3.0f}", end=" ")
             print()
         
-        print(f"Bay内倒序: {count_ascending_order(self.bay_weight)}")
+        print(f"Bay内倒序: {weight_count(self.bay_weight)}")
         # print(f"元素序列倒序: {count_ascending_containers(self.containers)}")
 
         print(self.top_weights)

@@ -84,8 +84,6 @@ def mask_fn(env) -> np.ndarray:
 def train1(env):
     env = ActionMasker(env, mask_fn)
     #check_env(env)
-
-
     policy_kwargs = dict(
         features_extractor_class=CustomFeaturesExtractor,
         features_extractor_kwargs=dict(cnn_output_dim=256),
@@ -106,9 +104,9 @@ def train1(env):
         env, 
         verbose = 0,
         n_steps = 1024,
-        learning_rate=1e-4,
+        learning_rate=5e-4,
         batch_size=256,
-        clip_range=0.1,
+        clip_range=0.20,  #
         ent_coef= 0.01,
 
         tensorboard_log="./tensorboard/learn_setting", # tensorboard --logdir=./tensorboard/learn_setting
@@ -118,7 +116,7 @@ def train1(env):
    
     #model = PPO.load(base_model_path, env=env)
 
-    model.learn(total_timesteps=250000, progress_bar=False ,  callback=TensorboardCallback())   #
+    model.learn(total_timesteps=150000, progress_bar=True ,  callback=TensorboardCallback())   #
     
     model.save(model_path)
 
