@@ -220,6 +220,19 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         # )
         # self.layer_norm2 = nn.LayerNorm(attention_d_model)
         # self.dropout = nn.Dropout(attention_dropout) # If adding FF layer
+       
+
+        # --- MLP for 'cont_weights' and 'cont_port' ---
+        # self.mlp_attention = nn.Sequential(
+        #    nn.Linear(observation_space["cont_weights"].shape[0],1)
+        # )
+        # self.mlp_port = nn.Sequential(
+        #     nn.Linear(observation_space["cont_port"].shape[0], 256), 
+        #     nn.ReLU(),
+        #     nn.Linear(256, attention_output_dim),
+        #     nn.ReLU()
+        # )
+
 
     def forward(self, observations: TensorDict) -> th.Tensor:
         # --- Process 'bay_weight' with CNN ---
@@ -281,6 +294,9 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
             value=projected_cont_features,
             need_weights=False # We usually don't need the weights themselves for feature extraction
         )
+
+        #aggregated_attention_features = self.mlp_attention(attn_output.permute(0,2,1)).squeeze(2)    # (B, attention_d_model)
+        aggregated_attention_features = attn_output.max(dim=1).values  
         
         # --- Optional: Apply LayerNorm and FeedForward (Transformer Block style) ---
         # attn_output = projected_cont_features + self.dropout(attn_output) # Residual connection + Dropout
@@ -290,16 +306,17 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         # attn_output = self.layer_norm2(attn_output)
         # ------------------------------------------------------------------------
 
-        # 4. Aggregate Attention Output:
-        #    Pool the features across the 'cont_num' dimension.
-        #    Using mean pooling here: (B, cont_num, attention_d_model) -> (B, attention_d_model)
-        #    You could also use max pooling: attn_output.max(dim=1).values
-        aggregated_attention_features = attn_output.max(dim=1).values  
+        #aggregated_attention_features = self.mlp_weight(cont_weights_obs) + self.mlp_port(cont_port_obs)
+       
 
+        
+       
+        
         # --- Concatenate CNN features and Aggregated Attention features ---
         combined_features = th.cat((bay_feathyres,aggregated_attention_features), dim=1)
         # Expected shape: (B, cnn_output_dim + attention_d_model) 
         # which should match self.features_dim
         
+
         return combined_features
 

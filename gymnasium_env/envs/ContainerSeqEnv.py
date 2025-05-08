@@ -11,17 +11,19 @@ class ContainerSeqEnv(gym.Env):
     def __init__(self):
         super(ContainerSeqEnv, self).__init__()
         
-        self.bay_width = 5
-        self.bay_height = 5
+        self.bay_width = 10
+        self.bay_height = 10
         self.cont_num = self.bay_width*self.bay_height
         self.now_reward = 0
 
         self.observation_space = spaces.Dict({
-            "cont_weights": Box(low=0, high=100, shape=(self.cont_num,), dtype=np.int32),
+            "cont_weights": Box(low=0, high=10, shape=(self.cont_num,), dtype=np.int32),
             "cont_port": Box(low=0, high=3, shape=(self.cont_num,), dtype=np.int32),
-            #"top_weights": Box(low=0, high=100, shape=(self.bay_width,), dtype=np.int32),
-            "bay_weight": Box(low=0, high=100, shape=(self.bay_height,self.bay_width), dtype=np.int32),
-            "bay_port": Box(low=0, high=3, shape=(self.bay_height,self.bay_width), dtype=np.int32)
+
+            # "top_ports": Box(low=0, high=2, shape=(self.bay_width,), dtype=np.int32),
+            # "top_weights": Box(low=0, high=10, shape=(self.bay_width,), dtype=np.int32),
+            "bay_weight": Box(low=0, high=10, shape=(self.bay_height,self.bay_width), dtype=np.int32),
+            "bay_port": Box(low=0, high=2, shape=(self.bay_height,self.bay_width), dtype=np.int32)
         })
         self.action_space = spaces.Discrete(self.cont_num)
         self.now_action = 0
@@ -34,7 +36,9 @@ class ContainerSeqEnv(gym.Env):
         observation = {
           "cont_weights": self.cont_weights,
           "cont_port": self.cont_port,
-          #"top_weights": self.top_weights,
+
+        #   "top_ports": self.top_ports,
+        #   "top_weights": self.top_weights,
           "bay_weight":  self.bay_weight,
           "bay_port": self.bay_port
         }
@@ -57,6 +61,7 @@ class ContainerSeqEnv(gym.Env):
         self.bay_weight = np.zeros((self.bay_height,self.bay_width), dtype=np.int32)
         self.bay_port = np.zeros((self.bay_height,self.bay_width), dtype=np.int32)
         self.top_weights = np.zeros((self.bay_width,), dtype=np.int32)
+        self.top_ports = np.zeros((self.bay_width,), dtype=np.int32)
         self.mask = np.ones((self.cont_num,), dtype=np.int32)
         self.now_reward = 0
 
@@ -84,6 +89,7 @@ class ContainerSeqEnv(gym.Env):
         self.bay_port[row][col] = current_port
 
         self.top_weights[col] = current_weight
+        self.top_ports[col] = current_port
 
         self.mask[action] = 0
 
@@ -92,9 +98,9 @@ class ContainerSeqEnv(gym.Env):
 
         if self.now_cont_index == self.cont_num :
             terminated = True
-            # weight_reward = count_ascending_order(self.bay_weight)
-            # port_reward = count_ascending_order(self.bay_port)
-            #reward = - weight_reward
+            weight_reward = count_ascending_order(self.bay_weight)
+            port_reward = count_ascending_order(self.bay_port)
+            reward = - (weight_reward + port_reward) 
             
 
     
@@ -117,8 +123,6 @@ class ContainerSeqEnv(gym.Env):
                 weight_reward -= 1
             else:
                 weight_reward += 0
-        # else:
-        #     weight_reward += current_weight * 0.1
 
         if row > 0:
             if current_port >= self.bay_port[row - 1 ][col]:
@@ -128,7 +132,7 @@ class ContainerSeqEnv(gym.Env):
       
           
         reward = weight_reward + port_reward
-        return reward
+        return 0
 
     def generate_containers(self):
         
@@ -141,7 +145,7 @@ class ContainerSeqEnv(gym.Env):
         #self.cont_weights = sorted([i for i in range(40,50)]) 
 
        # 从文件读取集装箱
-        with open("ContainerData/mixed/container_levels_50_mixed.txt", "r") as file:
+        with open("ContainerData/mixed/container_levels_100_mixed.txt", "r") as file:
             data = file.read()
             self.cont_weights = np.array([int(x) for x in data.split()], dtype=np.int32)
             self.cont_weights = self.cont_weights[:self.cont_num]
@@ -176,5 +180,12 @@ class ContainerSeqEnv(gym.Env):
 
         print("=" * (self.bay_width * 4 - 1))
 
+    def if_callback(self):
+        if self.now_cont_index == self.cont_num -1 :
+            return 1
+        return  0
+
+
+    
 
 
