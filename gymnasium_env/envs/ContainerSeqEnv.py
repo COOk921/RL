@@ -11,8 +11,8 @@ class ContainerSeqEnv(gym.Env):
     def __init__(self):
         super(ContainerSeqEnv, self).__init__()
         
-        self.bay_width = 7
-        self.bay_height = 7
+        self.bay_width = 10
+        self.bay_height = 10
         self.cont_num = self.bay_width*self.bay_height
         self.now_reward = 0
 
@@ -142,7 +142,7 @@ class ContainerSeqEnv(gym.Env):
         #self.cont_weights = sorted([i for i in range(40,50)]) 
 
        # 从文件读取集装箱
-        with open("ContainerData/mixed/container_levels_100_mixed.txt", "r") as file:
+        with open("ContainerData/uniform/container_levels_100_uniform.txt", "r") as file:
             data = file.read()
             self.cont_weights = np.array([int(x) for x in data.split()], dtype=np.int32)
             self.cont_weights = self.cont_weights[:self.cont_num]

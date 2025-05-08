@@ -105,7 +105,7 @@ def train1(env):
         verbose = 0,
         n_steps = 1024,
         learning_rate=5e-4,
-        batch_size=256,
+        batch_size=512,
         clip_range=0.20,  #
         ent_coef= 0.01,
 
@@ -116,7 +116,7 @@ def train1(env):
    
     #model = PPO.load(base_model_path, env=env)
 
-    model.learn(total_timesteps=150000, progress_bar=True ,  callback=TensorboardCallback())   #
+    model.learn(total_timesteps=500000, progress_bar=True ,  callback=TensorboardCallback())   #
     
     model.save(model_path)
 
