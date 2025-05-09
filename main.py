@@ -103,7 +103,7 @@ def train1(env):
         "MultiInputPolicy",  #CustomActorCriticPolicy
         env, 
         verbose = 0,
-        n_steps = 1024,
+        n_steps = 2048, # 1024
         learning_rate=5e-4,
         batch_size=512,
         clip_range=0.20,  #
