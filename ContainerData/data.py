@@ -115,6 +115,7 @@ weights_uniform_20ft = generate_container_weights(num_samples, '20ft', 'uniform'
 # Plotting histograms to verify
 plt.rcParams["font.sans-serif"]=["SimHei"] #设置字体
 plt.rcParams["axes.unicode_minus"]=False
+
 fig, axs = plt.subplots(2, 2, figsize=(12, 10))
 # fig.suptitle('Simulated 20ft Container Weight Distributions (Tons)')
 

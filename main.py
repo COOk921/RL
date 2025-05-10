@@ -103,10 +103,10 @@ def train1(env):
         "MultiInputPolicy",  #CustomActorCriticPolicy
         env, 
         verbose = 0,
-        n_steps = 2048, # 1024
+        n_steps = 512, # 1024
         learning_rate=5e-4,
         batch_size=512,
-        clip_range=0.20,  #
+        clip_range=0.15,  #
         ent_coef= 0.01,
 
         tensorboard_log="./tensorboard/learn_setting", # tensorboard --logdir=./tensorboard/learn_setting
@@ -116,7 +116,7 @@ def train1(env):
    
     #model = PPO.load(base_model_path, env=env)
 
-    model.learn(total_timesteps=500000, progress_bar=True ,  callback=TensorboardCallback())   #
+    model.learn(total_timesteps=200000, progress_bar=True ,  callback=TensorboardCallback())   #
     
     model.save(model_path)
 
