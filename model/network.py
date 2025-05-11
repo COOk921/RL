@@ -194,12 +194,12 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         
         # 3. Multi-Head Self-Attention Layer
         #    batch_first=True expects input shape (Batch, Sequence Length, Embedding Dim)
-        self.attention = nn.MultiheadAttention(
-            embed_dim=attention_d_model, 
-            num_heads=attention_nhead, 
-            dropout=attention_dropout,
-            batch_first=True # IMPORTANT: Input/Output shape is (Batch, Seq, Feature)
-        )
+        # self.attention = nn.MultiheadAttention(
+        #     embed_dim=attention_d_model, 
+        #     num_heads=attention_nhead, 
+        #     dropout=attention_dropout,
+        #     batch_first=True # IMPORTANT: Input/Output shape is (Batch, Seq, Feature)
+        # )
 
         # 4. Positional Encoding (Optional)
         # self.max_cont_num = observation_space["cont_weights"].shape[0] 
@@ -226,12 +226,19 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         # self.mlp_attention = nn.Sequential(
         #    nn.Linear(observation_space["cont_weights"].shape[0],1)
         # )
-        # self.mlp_port = nn.Sequential(
-        #     nn.Linear(observation_space["cont_port"].shape[0], 256), 
-        #     nn.ReLU(),
-        #     nn.Linear(256, attention_output_dim),
-        #     nn.ReLU()
-        # )
+
+        self.mlp_weight = nn.Sequential(
+            nn.Linear(observation_space["cont_weights"].shape[0], 256), 
+            nn.ReLU(),
+            nn.Linear(256, attention_output_dim),
+            nn.ReLU()
+        )
+        self.mlp_port = nn.Sequential(
+            nn.Linear(observation_space["cont_port"].shape[0], 256), 
+            nn.ReLU(),
+            nn.Linear(256, attention_output_dim),
+            nn.ReLU()
+        )
 
 
     def forward(self, observations: TensorDict) -> th.Tensor:
@@ -288,15 +295,14 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         #    Input: (B, cont_num, attention_d_model)
         #    Output: (attn_output, attn_weights)
         #       attn_output shape: (B, cont_num, attention_d_model)
-        attn_output, _ = self.attention(
-            query=projected_cont_features, 
-            key=projected_cont_features, 
-            value=projected_cont_features,
-            need_weights=False # We usually don't need the weights themselves for feature extraction
-        )
-
-        #aggregated_attention_features = self.mlp_attention(attn_output.permute(0,2,1)).squeeze(2)    # (B, attention_d_model)
-        aggregated_attention_features = attn_output.max(dim=1).values  
+        # attn_output, _ = self.attention(
+        #     query=projected_cont_features, 
+        #     key=projected_cont_features, 
+        #     value=projected_cont_features,
+        #     need_weights=False # We usually don't need the weights themselves for feature extraction
+        # )
+        #aggregated_attention_features = attn_output.max(dim=1).values  
+       
         
         # --- Optional: Apply LayerNorm and FeedForward (Transformer Block style) ---
         # attn_output = projected_cont_features + self.dropout(attn_output) # Residual connection + Dropout
@@ -306,10 +312,7 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         # attn_output = self.layer_norm2(attn_output)
         # ------------------------------------------------------------------------
 
-        #aggregated_attention_features = self.mlp_weight(cont_weights_obs) + self.mlp_port(cont_port_obs)
-       
-
-        
+        aggregated_attention_features = self.mlp_weight(cont_weights_obs) + self.mlp_port(cont_port_obs)
        
         
         # --- Concatenate CNN features and Aggregated Attention features ---
