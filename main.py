@@ -89,8 +89,8 @@ def train1(env):
         features_extractor_kwargs=dict(cnn_output_dim=256),
         net_arch=[
             dict(
-                pi=[512, 256,256],  # 策略网络
-                vf=[512, 256,256]   # 价值网络
+                pi=[512, 256],  # 策略网络
+                vf=[512, 256]   # 价值网络
                 # pi=[256, 128,64],  # 策略网络
                 # vf=[256, 128,64]   # 价值网络
             )
@@ -104,8 +104,8 @@ def train1(env):
         env, 
         verbose = 0,
         n_steps = 512, # 1024
-        learning_rate=5e-4,
-        batch_size=512,
+        learning_rate=1e-4,
+        batch_size=256,
         clip_range=0.15,  #
         ent_coef= 0.01,
 

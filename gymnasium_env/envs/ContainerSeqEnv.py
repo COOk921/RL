@@ -16,10 +16,11 @@ class ContainerSeqEnv(gym.Env):
         self.cont_num = self.bay_width*self.bay_height
         self.now_reward = 0
 
+        self.flag = 0
+
         self.observation_space = spaces.Dict({
             "cont_weights": Box(low=0, high=10, shape=(self.cont_num,), dtype=np.int32),
             "cont_port": Box(low=0, high=3, shape=(self.cont_num,), dtype=np.int32),
-
             # "top_ports": Box(low=0, high=2, shape=(self.bay_width,), dtype=np.int32),
             # "top_weights": Box(low=0, high=10, shape=(self.bay_width,), dtype=np.int32),
             "bay_weight": Box(low=0, high=10, shape=(self.bay_height,self.bay_width), dtype=np.int32),
@@ -80,11 +81,29 @@ class ContainerSeqEnv(gym.Env):
         current_weight = self.cont_weights[action]
         current_port = self.cont_port[action]
 
+        if self.now_cont_index == 0:
+            self.flag = 1   # 1表示放在左边
+        
         self.now_cont_index += 1  #[0,self.cont_num-1]
         
         # row:[0,self.bay_height-1]
         # col:[0,self.bay_width-1]
         row,col = ((self.now_cont_index -1)  // self.bay_width, (self.now_cont_index -1) % self.bay_width) 
+        #row,col = ((self.now_cont_index -1)  % self.bay_width, (self.now_cont_index -1) // self.bay_width) 
+        if col == 1:
+            col = 6
+        elif col == 2:
+            col = 1
+        elif col == 3:
+            col = 5
+        elif col == 4:
+            col = 2
+        elif col == 5:
+            col = 4
+        elif col == 6:
+            col = 3
+
+
         self.bay_weight[row][col] = current_weight
         self.bay_port[row][col] = current_port
 
@@ -98,8 +117,6 @@ class ContainerSeqEnv(gym.Env):
 
         if self.now_cont_index == self.cont_num :
             terminated = True
-
-        
     
         self.now_reward += reward
 
