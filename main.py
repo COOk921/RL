@@ -99,31 +99,31 @@ def train1(env):
     )
     
 
-    model = MaskablePPO(
+    model = PPO(  #MaskablePPO
         "MultiInputPolicy",  #CustomActorCriticPolicy
         env, 
         verbose = 0,
         n_steps = 512, # 1024
         learning_rate=1e-4,
         batch_size=256,
-        clip_range=0.15,  #
+        clip_range=0.20,  #
         ent_coef= 0.01,
 
-        tensorboard_log="./tensorboard/learn_setting", # tensorboard --logdir=./tensorboard/learn_setting
+        tensorboard_log="./tensorboard/learn_setting", # 
         device="cuda" ,
         policy_kwargs=policy_kwargs
     )
    
     #model = PPO.load(base_model_path, env=env)
 
-    model.learn(total_timesteps=200000, progress_bar=True ,  callback=TensorboardCallback())   #
+    model.learn(total_timesteps=80000, progress_bar=False ,  callback=TensorboardCallback())   #
     
     model.save(model_path)
 
 def test1(env):
     env = ActionMasker(env, mask_fn)
     
-    loaded_model = MaskablePPO.load(model_path, env=env)
+    loaded_model = PPO.load(model_path, env=env)  #MaskablePPO
 
     num_episodes = 1
     avg_reward  = 0
@@ -134,7 +134,8 @@ def test1(env):
         while not done:
             
             masks = env.action_masks()
-            action, _ = loaded_model.predict(obs,action_masks= masks)
+            # action, _ = loaded_model.predict(obs,action_masks= masks)
+            action, _= loaded_model.predict(obs,)  
             action = action.item()
             
             obs, reward, terminated, truncated, _ = env.step(action)
@@ -157,7 +158,7 @@ def main():
 
     env = gymnasium.make('gymnasium_env/ContainerSeqEnv-v0')
     # with action mask
-    train1(env)
+    #train1(env)
     test1(env)
 
 

@@ -4,7 +4,7 @@ import math
 import copy
 import sys
 from pathlib import Path
-
+import pdb
 
 
 # 定义集装箱类
@@ -42,6 +42,7 @@ def initialize_sequence(num_containers, rows, cols, type):
 # 将集装箱顺序映射到Bay布局
 def sequence_to_bay(sequence, slot_order, rows, cols):
     bay = [[None for _ in range(cols)] for _ in range(rows)]
+    # pdb.set_trace()
     for idx, (i, j) in enumerate(slot_order):
         if idx < len(sequence):
             bay[i][j] = sequence[idx]
@@ -50,7 +51,7 @@ def sequence_to_bay(sequence, slot_order, rows, cols):
     return bay
 
 # 计算目标函数（惩罚）
-def calculate_penalty(sequence, slot_order, rows=7, cols=7):
+def calculate_penalty(sequence, slot_order, rows, cols):
     bay = sequence_to_bay(sequence, slot_order, rows, cols)
     weight_penalty = 0
     destination_penalty = 0
@@ -91,7 +92,7 @@ def get_neighbor(sequence):
 def simulated_annealing(num_containers, rows, cols, type):
     # 初始化
     sequence, slot_order = initialize_sequence(num_containers, rows, cols,type)
-    current_penalty = calculate_penalty(sequence, slot_order)
+    current_penalty = calculate_penalty(sequence, slot_order, rows, cols)
     best_sequence = copy.deepcopy(sequence)
     best_penalty = current_penalty
     
@@ -99,7 +100,7 @@ def simulated_annealing(num_containers, rows, cols, type):
     initial_temp = 1000
     final_temp = 0.1
     alpha = 0.995
-    max_iterations = 50000
+    max_iterations = 80000
     
     temp = initial_temp
     iteration = 0
@@ -107,7 +108,7 @@ def simulated_annealing(num_containers, rows, cols, type):
     while temp > final_temp and iteration < max_iterations:
         # 生成邻域解
         neighbor_sequence = get_neighbor(sequence)
-        neighbor_penalty = calculate_penalty(neighbor_sequence, slot_order)
+        neighbor_penalty = calculate_penalty(neighbor_sequence, slot_order, rows, cols)
         
         # 计算能量差
         delta = neighbor_penalty - current_penalty
@@ -150,13 +151,13 @@ def print_bay(bay, rows , cols):
                 if bay[rows-i-1][j] is not  None and rows-i-1 > 0:
                     if  bay[rows-1-i][j].weight > bay[rows-i-2][j].weight:
                         weight_count += 1
-                        print("*" ,end=" ")
+                        # print("*" ,end=" ")
 
 
         print()
 
     print("重量倒箱:", weight_count) 
-    print("重量倒箱率：", weight_count / (100) * 100, "%")
+    print("重量倒箱率：", weight_count / (300) * 100, "%")
    
     print("Bay port:")
     for i in range(rows):
@@ -169,21 +170,19 @@ def print_bay(bay, rows , cols):
                 if bay[rows-i-1][j] is not  None and rows-i-1 > 0:
                     if  bay[rows-1-i][j].destination < bay[rows-i-2][j].destination:
                         port_count += 1
-                        print("*" ,end=" ")
+                        # print("*" ,end=" ")
            
         print()
     print("港口倒箱:", port_count)
-    print("港口倒箱率：", port_count / (100) * 100, "%")
-
-
+    print("港口倒箱率：", port_count / (300) * 100, "%")
 
 
 # 测试
 if __name__ == "__main__":
-    num_containers = 100  
-    rows = 8
-    cols = 8
-    type = "uniform"  # "uniform", "heavy", "light", "mixed"
+    num_containers = 300  
+    rows = 17
+    cols = 17
+    type = "mixed"  # "uniform", "heavy", "light", "mixed"
 
     best_bay, best_penalty = simulated_annealing(num_containers, rows, cols,type=type)
     print("Best Penalty:", best_penalty)

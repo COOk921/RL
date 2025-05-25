@@ -11,8 +11,8 @@ class ContainerSeqEnv(gym.Env):
     def __init__(self):
         super(ContainerSeqEnv, self).__init__()
         
-        self.bay_width = 7
-        self.bay_height = 7
+        self.bay_width = 10
+        self.bay_height = 10
         self.cont_num = self.bay_width*self.bay_height
         self.now_reward = 0
 
@@ -26,7 +26,8 @@ class ContainerSeqEnv(gym.Env):
             "bay_weight": Box(low=0, high=10, shape=(self.bay_height,self.bay_width), dtype=np.int32),
             "bay_port": Box(low=0, high=2, shape=(self.bay_height,self.bay_width), dtype=np.int32)
         })
-        self.action_space = spaces.Discrete(self.cont_num)
+        #self.action_space = spaces.Discrete(self.cont_num)
+        self.action_space = spaces.Discrete(13)
         self.now_action = 0
         self.total_weight = 0
 
@@ -77,9 +78,15 @@ class ContainerSeqEnv(gym.Env):
         self.now_action = action
         reward = 0
         
-       
-        current_weight = self.cont_weights[action]
-        current_port = self.cont_port[action]
+        if action < 10:
+            current_weight = action 
+            current_port = 0
+        else:
+            current_weight = action - 10
+            current_port = action%10
+      
+        # current_weight = self.cont_weights[action]
+        # current_port = self.cont_port[action]
 
         if self.now_cont_index == 0:
             self.flag = 1   # 1表示放在左边
@@ -151,22 +158,27 @@ class ContainerSeqEnv(gym.Env):
     def generate_containers(self):
         
         #随机集装箱
-        # mean_weight = 50
-        # std_weight = 10
-        # self.cont_weights = np.random.normal(mean_weight, std_weight, size=self.cont_num).astype(int)
+        mean_weight = 50
+        std_weight = 10
+        self.cont_weights = np.random.normal(mean_weight, std_weight, size=self.cont_num).astype(int)
+        self.cont_weights = np.clip(self.cont_weights, 45, 55)  # 限制在40到60之间
+
+
+        self.cont_port = np.random.randint(0, 2, size=self.cont_num).astype(int)
+        
 
         #固定集装箱
         #self.cont_weights = sorted([i for i in range(40,50)]) 
 
        # 从文件读取集装箱
-        with open("ContainerData/mixed/container_levels_50_mixed.txt", "r") as file:
-            data = file.read()
-            self.cont_weights = np.array([int(x) for x in data.split()], dtype=np.int32)
-            self.cont_weights = self.cont_weights[:self.cont_num]
+        # with open("ContainerData/mixed/container_levels_50_mixed.txt", "r") as file:
+        #     data = file.read()
+        #     self.cont_weights = np.array([int(x) for x in data.split()], dtype=np.int32)
+        #     self.cont_weights = self.cont_weights[:self.cont_num]
 
-        with open("ContainerData/port.txt", "r") as file:
-            self.cont_port = np.array([int(x) for x in file.read().split()], dtype=np.int32)
-            self.cont_port = self.cont_port[:self.cont_num]
+        # with open("ContainerData/port.txt", "r") as file:
+        #     self.cont_port = np.array([int(x) for x in file.read().split()], dtype=np.int32)
+        #     self.cont_port = self.cont_port[:self.cont_num]
         
        
 
